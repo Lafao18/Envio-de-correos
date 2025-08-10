@@ -1,6 +1,9 @@
-// Inicializar EmailJS con tu Public Key
+// Inicializar EmailJS con tu Public Key (nueva sintaxis)
 (function () {
-  emailjs.init("3NXeGZwmm81j1vc0t");
+  emailjs.init({
+    publicKey: "3NXeGZwmm81j1vc0t"
+  });
+  console.log("✅ EmailJS inicializado correctamente con nueva versión");
 })();
 
 // Función para mostrar mensajes
@@ -10,75 +13,157 @@ function mostrarMensaje(texto, tipo) {
   mensaje.className = `mensaje ${tipo}`;
   mensaje.style.display = "block";
   
-  // Ocultar el mensaje después de 5 segundos
+  // Ocultar el mensaje después de 6 segundos
   setTimeout(() => {
     mensaje.style.display = "none";
-  }, 5000);
+  }, 6000);
 }
 
-// Función para validar formato básico de email
+// Función para validar formato de email
 function validateEmail(email) {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return re.test(email);
 }
 
+// Función principal para enviar email
+function enviarEmail(emailUsuario) {
+  // Parámetros más simples para evitar problemas
+  const templateParams = {
+    to_email: emailUsuario
+  };
+  
+  console.log("🚀 Enviando email...");
+  console.log("📧 Email destinatario:", emailUsuario);
+  console.log("🔧 Service ID: service_4khtq3u");
+  console.log("📄 Template ID: template_34gxftq");
+  console.log("📋 Parámetros:", templateParams);
+  console.log("🔑 Public Key configurada: 3NXeGZwmm81j1vc0t");
+
+      // Enviar email con método alternativo más confiable
+    emailjs.sendForm("service_4khtq3u", "template_34gxftq", {
+      to_email: emailUsuario,
+      from_name: "Mi Página de Noticias"
+    })
+}
+
 // Manejar el evento de envío del formulario
-document
-  .getElementById("form-suscripcion")
-  .addEventListener("submit", function (e) {
+document.addEventListener("DOMContentLoaded", function() {
+  const form = document.getElementById("form-suscripcion");
+  const inputCorreo = document.getElementById("correo");
+  const btnSuscribir = document.getElementById("btn-suscribir");
+
+  if (!form || !inputCorreo || !btnSuscribir) {
+    console.error("❌ Error: No se encontraron todos los elementos del formulario");
+    return;
+  }
+
+  form.addEventListener("submit", function (e) {
     e.preventDefault();
 
-    const emailUsuario = document.getElementById("correo").value.trim();
-    const btnSuscribir = document.getElementById("btn-suscribir");
+    const emailUsuario = inputCorreo.value.trim().toLowerCase();
 
-    // Validación básica del email
+    // Validaciones
     if (!emailUsuario) {
-      mostrarMensaje("Por favor ingresa un correo válido.", "error");
+      mostrarMensaje("⚠️ Por favor ingresa tu correo electrónico", "error");
+      inputCorreo.focus();
       return;
     }
     
     if (!validateEmail(emailUsuario)) {
-      mostrarMensaje("Formato de correo inválido. Ejemplo válido: usuario@dominio.com", "error");
+      mostrarMensaje("❌ Por favor ingresa un correo válido (ejemplo: usuario@gmail.com)", "error");
+      inputCorreo.focus();
       return;
     }
 
-    // Deshabilitar botón mientras se envía
+    // Cambiar estado del botón
     btnSuscribir.disabled = true;
     btnSuscribir.textContent = "Enviando...";
 
-    // Enviar correo usando EmailJS
-    emailjs
-      .send("service_4khtq3u", "template_34gxftq", {
-        to_email: emailUsuario,
-        user_email: emailUsuario // Agregamos también este parámetro por si lo necesitas en tu template
+    // Enviar email
+    console.log("🔄 Intentando envío con método directo...");
+    
+    emailjs.send("service_4khtq3u", "template_34gxftq", {
+      to_email: emailUsuario,
+      from_name: "Mi Página de Noticias"
+    })
+      .then(function (response) {
+        console.log("✅ Email enviado exitosamente:", response);
+        console.log("📊 Status:", response.status);
+        console.log("📝 Text:", response.text);
+        
+        mostrarMensaje("🎉 ¡Perfecto! Te hemos enviado un correo de bienvenida. Revisa tu bandeja de entrada.", "exito");
+        form.reset();
+        
+        // Opcional: Guardar en localStorage que el usuario se suscribió
+        localStorage.setItem('suscrito', 'true');
+        localStorage.setItem('emailSuscrito', emailUsuario);
       })
-      .then(
-        function (response) {
-          console.log("Correo enviado exitosamente:", response);
-          mostrarMensaje("¡Correo de bienvenida enviado con éxito! Revisa tu bandeja de entrada.", "exito");
-          document.getElementById("form-suscripcion").reset();
-        },
-        function (error) {
-          console.error("Error al enviar el correo:", error);
-
-          let mensajeError = "Error al enviar el correo. ";
-          
-          if (error.status === 0) {
-            mensajeError += "Revisa tu conexión a internet.";
-          } else if (error.status === 400) {
-            mensajeError += "Verifica la configuración del servicio.";
-          } else if (error.status === 403) {
-            mensajeError += "Error de autorización. Revisa la configuración de EmailJS.";
-          } else {
-            mensajeError += "Inténtalo de nuevo más tarde.";
+      .catch(function (error) {
+        console.error("❌ ERROR COMPLETO:", error);
+        console.error("📊 Status del error:", error.status);
+        console.error("📝 Mensaje del error:", error.text);
+        console.error("🔍 Tipo de error:", typeof error);
+        console.error("🗂️ Todas las propiedades del error:", Object.keys(error));
+        
+        // Mostrar TODOS los detalles del error
+        console.log("=== DEBUGGING COMPLETO ===");
+        console.log("Error object:", JSON.stringify(error, null, 2));
+        
+        let mensajeError = "❌ Error al enviar el correo. ";
+        let detalleError = "";
+        
+        if (error.status) {
+          switch(error.status) {
+            case 0:
+              mensajeError += "Problema de conexión a internet.";
+              detalleError = "No se pudo conectar con los servidores de EmailJS";
+              break;
+            case 400:
+              mensajeError += "Error en la configuración del service o template.";
+              detalleError = "Verifica que el Service ID y Template ID sean correctos";
+              break;
+            case 403:
+              mensajeError += "Error de autorización.";
+              detalleError = "Verifica tu Public Key o que el service esté conectado";
+              break;
+            case 422:
+              mensajeError += "Datos enviados inválidos.";
+              detalleError = "Verifica el formato del email o los parámetros del template";
+              break;
+            default:
+              mensajeError += `Error ${error.status}: ${error.text || 'Error desconocido'}`;
+              detalleError = "Error no identificado";
           }
-          
-          mostrarMensaje(mensajeError, "error");
+        } else {
+          mensajeError += "Error de red o configuración.";
+          detalleError = "Posible problema de CORS o conectividad";
         }
-      )
+        
+        console.error("💡 Detalle del error:", detalleError);
+        mostrarMensaje(mensajeError, "error");
+        
+        // Mostrar alert con más detalles para debugging
+        alert(`DEBUG INFO:\nStatus: ${error.status || 'undefined'}\nMessage: ${error.text || error.message || 'No message'}\nType: ${typeof error}\n\nRevisa la consola (F12) para más detalles.`);
+      })
       .finally(function() {
-        // Rehabilitar botón
+        // Restaurar estado del botón
         btnSuscribir.disabled = false;
         btnSuscribir.textContent = "Suscribirme";
       });
   });
+
+  // Validación en tiempo real
+  inputCorreo.addEventListener("input", function() {
+    const email = this.value.trim();
+    
+    if (email && validateEmail(email)) {
+      this.style.borderColor = "#28a745";
+    } else if (email) {
+      this.style.borderColor = "#dc3545";
+    } else {
+      this.style.borderColor = "#e1e5e9";
+    }
+  });
+
+  console.log("📱 Formulario de suscripción cargado correctamente");
+});
